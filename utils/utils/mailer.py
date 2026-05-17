@@ -25,10 +25,17 @@ def send_email(html_content: str, subject: str = None) -> bool:
     if subject is None:
         subject = f"📈 MarketView 시황 리포트 — {today}"
 
+    # 수신자 목록
+    recipients = [
+        report_to,
+        "ops114@nhqv.com",
+        "devil17c@naver.com",
+    ]
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"]    = f"MarketView <{gmail_user}>"
-    msg["To"]      = report_to
+    msg["To"]      = ", ".join(recipients)
 
     part = MIMEText(html_content, "html", "utf-8")
     msg.attach(part)
@@ -36,8 +43,10 @@ def send_email(html_content: str, subject: str = None) -> bool:
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, report_to, msg.as_string())
-        print(f"✅ 이메일 발송 완료 → {report_to}")
+            server.sendmail(gmail_user, recipients, msg.as_string())
+        print(f"✅ 이메일 발송 완료 → {len(recipients)}명")
+        for r in recipients:
+            print(f"   📧 {r}")
         return True
     except smtplib.SMTPAuthenticationError:
         print("❌ Gmail 인증 실패 — 앱 비밀번호를 확인하세요")
