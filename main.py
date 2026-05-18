@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from data.collector       import collect_all
 from utils.claude_analyst import generate_comment
-from templates.email_html import build_email_html
+from utils.templates.email_html import build_email_html
 from utils.mailer         import send_email
 
 KST = pytz.timezone("Asia/Seoul")
