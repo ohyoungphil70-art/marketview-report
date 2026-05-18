@@ -10,13 +10,12 @@ import pytz
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from data.collector       import collect_all
-from utils.claude_analyst import generate_comment
-from utils.templates.email_html import build_email_html
-from utils.mailer         import send_email
+from data.collector                    import collect_all
+from utils.claude_analyst              import generate_comment
+from utils.utils.templates.email_html  import build_email_html
+from utils.utils.mailer                import send_email
 
 KST = pytz.timezone("Asia/Seoul")
-
 
 def run():
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M KST")
@@ -47,7 +46,6 @@ def run():
         print("\n❌ 오류 발생:")
         traceback.print_exc()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     run()
