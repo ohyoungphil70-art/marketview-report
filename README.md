@@ -1,70 +1,70 @@
-# marketview-report
-매일 오전 6시 시황 분석 자동 이메일 리포트
 ---
 
-## 📊 최신 리포트
+## 🔍 리포트 활용하기
 
-- **최신 리포트**: [INDEX.md](INDEX.md) 참고
-- **데이터 아카이브**: [data/archive/](data/archive/) 폴더
-- **AI 분석**: [data/analysis/](data/analysis/) 폴더
-- **이메일 HTML**: [data/html/](data/html/) 폴더
+### 최신 리포트 확인
 
-### 빠른 링크
+1. **[INDEX.md](INDEX.md)** 열기
+2. 원하는 날짜 클릭
+3. **[📄 보기]** 링크로 이메일 형식 확인
 
-| 항목 | 링크 |
-|------|------|
-| 최근 30일 | [INDEX.md](INDEX.md) |
-| 이번 달 | [reports/](reports/) |
-| 모든 데이터 | [data/archive/](data/archive/) |
-| 이메일 형식 | [data/html/](data/html/) |
+### 데이터 분석
 
----
+1. **[data/archive/](data/archive/)** 폴더 열기
+2. 특정 날짜의 JSON 파일 다운로드
+3. Python/Excel에서 분석
 
-## 🚀 자동화 시스템
+### 월간 분석
 
-매일 오전 6시(KST)에 자동으로 실행됩니다:
-
-1. ✅ 시장 데이터 수집 (KRX, Yahoo Finance)
-2. ✅ Claude AI로 시황 분석
-3. ✅ HTML 이메일 생성
-4. ✅ 자동 이메일 발송
-5. ✅ 데이터 자동 저장 (JSON)
-6. ✅ 분석 결과 저장
-7. ✅ INDEX.md 자동 갱신
-8. ✅ GitHub 자동 커밋
-
-### 저장되는 파일
----
-
-## 📊 최신 리포트
-
-- **최신 리포트**: [INDEX.md](INDEX.md) 참고
-- **데이터 아카이브**: [data/archive/](data/archive/) 폴더
-- **AI 분석**: [data/analysis/](data/analysis/) 폴더
-- **이메일 HTML**: [data/html/](data/html/) 폴더
-
-### 빠른 링크
-
-| 항목 | 링크 |
-|------|------|
-| 최근 30일 | [INDEX.md](INDEX.md) |
-| 이번 달 | [reports/](reports/) |
-| 모든 데이터 | [data/archive/](data/archive/) |
-| 이메일 형식 | [data/html/](data/html/) |
+1. **[reports/](reports/)** 폴더 열기
+2. `YYYY-MM.md` 파일로 월간 요약 확인
 
 ---
 
-## 🚀 자동화 시스템
+## 📊 주요 지표
 
-**매주 월요일~금요일 오전 6시 50분(KST)에 자동으로 실행됩니다:**
+### 수집되는 지수
+- 🇰🇷 국내: KOSPI, KOSDAQ, KRX300
+- 🇺🇸 미국: DOW JONES, NASDAQ, S&P 500
+- 업종: 반도체, 자동차, 바이오, 2차전지 등
 
-1. ✅ 시장 데이터 수집 (KRX, Yahoo Finance)
-2. ✅ Claude AI로 시황 분석
-3. ✅ HTML 이메일 생성
-4. ✅ 자동 이메일 발송
-5. ✅ 데이터 자동 저장 (JSON)
-6. ✅ 분석 결과 저장
-7. ✅ INDEX.md 자동 갱신
-8. ✅ GitHub 자동 커밋
+### 분석 항목
+- 📈 지수 등락률
+- 👥 투자자 수급 (외국인, 기관, 개인)
+- 💰 국채금리
+- 📰 시장 뉴스
+- 💡 AI 시황 분석
 
-### 저장되는 파일
+---
+
+## 🔧 기술 스택
+
+- **언어**: Python 3.11
+- **자동화**: GitHub Actions
+- **AI**: Claude API (Anthropic)
+- **데이터**: KRX, Yahoo Finance, Naver Finance
+- **버전 관리**: Git & GitHub
+
+---
+
+## 📞 정보
+
+- **자동 실행**: 매주 월~금 오전 6시 50분 (KST)
+- **수신자**: 3명 (Gmail)
+- **데이터 보관**: GitHub (무한 버전 관리)
+- **업데이트**: 매일 1회
+
+---
+
+## 📈 당신의 투자 철학
+
+> "좋은 투자란 결국, 좋은 판단을 꾸준히 반복하는 것이다."
+
+이 자동화 시스템은 당신의 18년 경험과 매일의 분석을 기록하고,  
+시간이 지날수록 더 강력한 투자 자산이 됩니다.
+
+**"매주 쌓이는 분석과 기록이 결국 큰 차이를 만듭니다."** ✨
+
+---
+
+마지막 업데이트: 2026-05-19
