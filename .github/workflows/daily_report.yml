@@ -52,13 +52,13 @@ jobs:
         if: always()
         run: |
           python -c "
-from utils.index_generator import generate_summary_for_month
-from datetime import datetime
-import pytz
-KST = pytz.timezone('Asia/Seoul')
-now = datetime.now(KST)
-generate_summary_for_month(now.year, now.month)
-" || echo "⚠️ 월간 요약 생성 실패 (무시함)"
+          from utils.index_generator import generate_summary_for_month
+          from datetime import datetime
+          import pytz
+          KST = pytz.timezone('Asia/Seoul')
+          now = datetime.now(KST)
+          generate_summary_for_month(now.year, now.month)
+          " || echo "⚠️ 월간 요약 생성 실패 (무시함)"
 
       - name: 🔧 Git 설정
         if: always()
