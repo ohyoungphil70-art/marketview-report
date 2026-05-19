@@ -180,8 +180,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
         summary_row("기관 순매수",   f"{_sign(inv_i)}{inv_i:,}억", _inv_color(inv_i)) +
         summary_row("개인 순매수",   f"{_sign(inv_p)}{inv_p:,}억", _inv_color(inv_p)) +
         summary_row("국채 3년 금리", f"{bond_rate:.2f}%", C_ACC) +
-        summary_row("투자자예탁금",  f"{dep_amt:.1f}조", C_UP if dep_amt > 0 else C_TEXT)
-        ))
+        summary_row("투자자예탁금",  f"{dep_amt:.1f}조", C_UP if dep_amt > 0 else C_TEXT))
     )
 
     badge_colors = {
