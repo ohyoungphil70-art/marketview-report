@@ -310,16 +310,6 @@ def build_email_html(data: dict, analysis: dict) -> str:
     </td>
   </tr>
 
-  <!-- 뉴스 -->
-  <tr>
-    <td style="padding:16px 28px 0;">
-      <div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:14px;">
-        <div style="font-size:10pt;font-weight:700;color:{C_TEXT};margin-bottom:8px;">📰 오늘의 증시 뉴스</div>
-        {news_links}
-      </div>
-    </td>
-  </tr>
-
   <!-- 푸터 -->
   <tr>
     <td style="padding:20px 28px;border-top:1px solid #1e2d45;margin-top:16px;">
