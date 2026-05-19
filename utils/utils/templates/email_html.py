@@ -73,7 +73,9 @@ def build_email_html(data: dict, analysis: dict) -> str:
         arr = _arrow(pct)
         tag = "강세" if pct >= 0 else "약세"
         tag_bg = "rgba(229,62,62,.18)" if pct >= 0 else "rgba(49,130,206,.18)"
-        return f'<td style="width:33%;padding:0 6px;"><div style="background:#1a2235;border:1px solid {col};border-radius:10px;padding:16px;border-top:3px solid {col};height:140px;display:flex;flex-direction:column;justify-content:space-between;"><div style="font-size:9pt;color:{C_MUTE};letter-spacing:1px;font-weight:700;">{name}</div><div style="font-family:\'Courier New\',monospace;font-size:26px;font-weight:700;color:{C_TEXT};margin:8px 0;">{_fmt(close)}</div><div style="font-family:\'Courier New\',monospace;font-size:14pt;color:{col};font-weight:700;">{arr} {_fmt(abs(chg))}</div><div style="font-family:\'Courier New\',monospace;font-size:14pt;color:{col};font-weight:700;">({_sign(pct)}{_fmt(pct)}%)</div><div style="text-align:center;"><span style="background:{tag_bg};color:{col};font-size:12px;padding:4px 10px;border-radius:4px;font-weight:700;display:inline-block;">{tag}</span></div></div></td>'
+        # 지수가 5자리 이상이면 더 작게, 아니면 크게
+        font_size = "24px" if close >= 10000 else "28px"
+        return f'<td style="width:33%;padding:0 6px;"><div style="background:#1a2235;border:1px solid {col};border-radius:10px;padding:16px;border-top:3px solid {col};height:155px;display:flex;flex-direction:column;justify-content:space-between;"><div style="font-size:10pt;color:{C_MUTE};letter-spacing:1px;font-weight:700;">{name}</div><div style="font-family:\'Courier New\',monospace;font-size:{font_size};font-weight:700;color:{C_TEXT};margin:6px 0;line-height:1.1;overflow:hidden;">{_fmt(close)}</div><div style="font-family:\'Courier New\',monospace;font-size:15pt;color:{col};font-weight:700;margin:2px 0;">{arr} {_fmt(abs(chg))}</div><div style="font-family:\'Courier New\',monospace;font-size:15pt;color:{col};font-weight:700;margin:2px 0;">({_sign(pct)}{_fmt(pct)}%)</div><div style="text-align:center;margin-top:4px;"><span style="background:{tag_bg};color:{col};font-size:13px;padding:5px 12px;border-radius:4px;font-weight:700;display:inline-block;">{tag}</span></div></div></td>'
 
     kospi = kr.get("KOSPI", {"close": 0, "change": 0, "pct": 0})
     kosdaq = kr.get("KOSDAQ", {"close": 0, "change": 0, "pct": 0})
@@ -98,7 +100,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
         pct = s["pct"]
         col = _color(pct)
         bar_w = min(abs(pct) / 6 * 100, 100)
-        sector_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};width:70px;font-weight:700;">{s["name"]}</td><td style="padding:8px 8px;"><div style="background:#1e2d45;border-radius:2px;height:6px;width:100%;"><div style="background:{col};height:6px;border-radius:2px;width:{bar_w:.0f}%;"></div></div></td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{col};text-align:right;font-weight:700;">{_sign(pct)}{_fmt(pct)}%</td></tr>'
+        sector_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};width:70px;font-weight:700;">{s["name"]}</td><td style="padding:8px 8px;"><div style="background:#1e2d45;border-radius:2px;height:6px;width:100%;"><div style="background:{col};height:6px;border-radius:2px;width:{bar_w:.0f}%;"></div></div></td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{col};text-align:right;font-weight:700;">{_sign(pct)}{_fmt(pct)}%</td></tr>'
 
     inv_f = inv.get("외국인", 0)
     inv_i = inv.get("기관", 0)
@@ -106,12 +108,12 @@ def build_email_html(data: dict, analysis: dict) -> str:
     bond_rate = bond.get("rate", 0)
     dep_amt = dep.get("amount", 0)
 
-    market_rows = f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">외국인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_f)};text-align:right;font-weight:700;">{_sign(inv_f)}{inv_f:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">기관 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_i)};text-align:right;font-weight:700;">{_sign(inv_i)}{inv_i:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">개인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_p)};text-align:right;font-weight:700;">{_sign(inv_p)}{inv_p:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">국채 3년 금리</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{C_ACC};text-align:right;font-weight:700;">{bond_rate:.2f}%</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">투자자예탁금</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{C_UP if dep_amt > 0 else C_TEXT};text-align:right;font-weight:700;">{dep_amt:.1f}조</td></tr>'
-    market_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">KOSPI 전일대비</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_color(kospi["pct"])};text-align:right;font-weight:700;">{_sign(kospi["change"])}{_fmt(kospi["change"])} ({_sign(kospi["pct"])}{_fmt(kospi["pct"])}%)</td></tr>'
+    market_rows = f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">외국인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{_inv_color(inv_f)};text-align:right;font-weight:700;">{_sign(inv_f)}{inv_f:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">기관 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{_inv_color(inv_i)};text-align:right;font-weight:700;">{_sign(inv_i)}{inv_i:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">개인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{_inv_color(inv_p)};text-align:right;font-weight:700;">{_sign(inv_p)}{inv_p:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">국채 3년 금리</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{C_ACC};text-align:right;font-weight:700;">{bond_rate:.2f}%</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">투자자예탁금</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{C_UP if dep_amt > 0 else C_TEXT};text-align:right;font-weight:700;">{dep_amt:.1f}조</td></tr>'
+    market_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">KOSPI 전일대비</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:14pt;color:{_color(kospi["pct"])};text-align:right;font-weight:700;">{_sign(kospi["change"])}{_fmt(kospi["change"])} ({_sign(kospi["pct"])}{_fmt(kospi["pct"])}%)</td></tr>'
 
     issue_blocks = ""
     for iss in issues:
