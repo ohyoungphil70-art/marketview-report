@@ -1,108 +1,119 @@
 """
 marketview/utils/claude_analyst.py
-Claude API로 시황 코멘트 및 뉴스 분석 생성
+Claude API를 사용한 시황 분석 모듈
 """
 import os
 import json
-import requests
+from anthropic import Anthropic
 
+client = Anthropic()
 
-def generate_comment(data: dict) -> dict:
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        return _fallback_comment()
-
-    kr  = data.get("kr", {})
-    us  = data.get("us", {})
-    inv = data.get("investors", {})
-    bond= data.get("bond", {})
-    dep = data.get("deposit", {})
-    news= data.get("news", [])
-    sec = data.get("sectors", [])
-
-    news_titles = "\n".join([f"- {n['title']}" for n in news[:5]]) or "없음"
-    sector_str  = "\n".join([f"- {s['name']}: {s['pct']:+.2f}%" for s in sec[:8]]) or "없음"
-
-    prompt = f"""
-오늘 날짜: {data.get('date', '')}
+def analyze_market(data: dict) -> dict:
+    """
+    시장 데이터를 분석하고 투자 인사이트 생성
+    """
+    print("🤖 Claude AI 분석 시작...")
+    
+    try:
+        # 데이터 요약
+        market_summary = f"""
+=== 시장 데이터 요약 ===
+날짜: {data.get('date', '')}
 
 [국내 지수]
-- KOSPI:  {kr.get('KOSPI',{}).get('close',0):,.2f}  ({kr.get('KOSPI',{}).get('pct',0):+.2f}%)
-- KOSDAQ: {kr.get('KOSDAQ',{}).get('close',0):,.2f} ({kr.get('KOSDAQ',{}).get('pct',0):+.2f}%)
-- KRX300: {kr.get('KRX300',{}).get('close',0):,.2f} ({kr.get('KRX300',{}).get('pct',0):+.2f}%)
+- KOSPI: {data['kr']['KOSPI']['close']:.2f} ({data['kr']['KOSPI']['pct']:+.2f}%)
+- KOSDAQ: {data['kr']['KOSDAQ']['close']:.2f} ({data['kr']['KOSDAQ']['pct']:+.2f}%)
+- KRX300: {data['kr']['KRX300']['close']:.2f} ({data['kr']['KRX300']['pct']:+.2f}%)
 
 [미국 지수]
-- DOW:    {us.get('DOW',{}).get('close',0):,.2f}  ({us.get('DOW',{}).get('pct',0):+.2f}%)
-- NASDAQ: {us.get('NASDAQ',{}).get('close',0):,.2f} ({us.get('NASDAQ',{}).get('pct',0):+.2f}%)
-- S&P500: {us.get('SP500',{}).get('close',0):,.2f}  ({us.get('SP500',{}).get('pct',0):+.2f}%)
+- DOW JONES: {data['us']['DOW']['close']:.2f} ({data['us']['DOW']['pct']:+.2f}%)
+- NASDAQ: {data['us']['NASDAQ']['close']:.2f} ({data['us']['NASDAQ']['pct']:+.2f}%)
+- S&P 500: {data['us']['SP500']['close']:.2f} ({data['us']['SP500']['pct']:+.2f}%)
 
-[투자자 순매수 (억원)]
-- 외국인: {inv.get('외국인',0):+,}억
-- 기관:   {inv.get('기관',0):+,}억
-- 개인:   {inv.get('개인',0):+,}억
-
-[국채 3년 금리]
-- {bond.get('rate',0):.2f}%
-
-[업종별 등락]
-{sector_str}
-
-[오늘의 뉴스]
-{news_titles}
-
-위 데이터를 바탕으로 18년 경력 증권사 부장 관점에서 아래 JSON 형식으로 분석해주세요.
-반드시 JSON만 출력하고 다른 말은 하지 마세요.
-
-{{
-  "summary": "200자 이내 핵심 시황 총평",
-  "issues": [
-    {{
-      "badge": "충격|주의|변수|주목|참고 중 하나",
-      "color": "red|blue|gold 중 하나",
-      "title": "뉴스 제목 30자 이내",
-      "text": "분석 내용 100자 이내"
-    }}
-  ]
-}}
-
-issues는 3~4개 작성.
+[업종별 등락률 (상위 3)]
 """
+        for i, sector in enumerate(data.get('sectors', [])[:3]):
+            market_summary += f"- {sector['name']}: {sector['pct']:+.2f}%\n"
+        
+        market_summary += f"""
+[투자자 수급]
+- 외국인: {data['investors'].get('외국인', 0):+,}억
+- 기관: {data['investors'].get('기관', 0):+,}억
+- 개인: {data['investors'].get('개인', 0):+,}억
 
-    try:
-        resp = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-sonnet-4-6",
-                "max_tokens": 1024,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=30,
+[시장 지표]
+- 국채 3년 금리: {data['bond'].get('rate', 0):.2f}%
+- 투자자예탁금: {data['deposit'].get('amount', 0):.1f}조
+"""
+        
+        # Claude에게 분석 요청
+        message = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=1000,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""당신은 18년 경력의 증권사 시황 분석가입니다.
+
+다음 시장 데이터를 분석하고 전문적인 인사이트를 제공해주세요.
+
+{market_summary}
+
+다음 형식으로 답변해주세요:
+
+1. 오늘의 시장 요약 (2-3문장)
+2. 주목할 점 3가지 (각 1-2문장)
+
+JSON 형식으로 답변해주세요:
+{{
+    "summary": "시장 요약 텍스트",
+    "issues": [
+        {{"badge": "주목", "color": "gold", "title": "이슈 제목", "text": "설명"}},
+        {{"badge": "주목", "color": "gold", "title": "이슈 제목", "text": "설명"}},
+        {{"badge": "주목", "color": "gold", "title": "이슈 제목", "text": "설명"}}
+    ]
+}}
+"""
+                }
+            ]
         )
-        text = resp.json()["content"][0]["text"].strip()
-        if "```" in text:
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        return json.loads(text)
-    except Exception as e:
-        print(f"[Claude API] 오류: {e}")
-        return _fallback_comment()
-
-
-def _fallback_comment():
-    return {
-        "summary": "시황 데이터를 불러오는 중 오류가 발생했습니다.",
-        "issues": [
-            {
-                "badge": "참고",
-                "color": "gold",
-                "title": "데이터 수집 오류",
-                "text": "API 연결 실패. 잠시 후 재시도하세요."
+        
+        # 응답 파싱
+        response_text = message.content[0].text
+        
+        # JSON 추출 시도
+        try:
+            # JSON 부분만 추출
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+            if start_idx != -1 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx]
+                result = json.loads(json_str)
+            else:
+                # JSON 파싱 실패 시 기본값
+                result = {
+                    "summary": response_text[:200],
+                    "issues": [
+                        {"badge": "참고", "color": "gold", "title": "시장 분석", "text": response_text[:100]}
+                    ]
+                }
+        except json.JSONDecodeError:
+            # JSON 파싱 실패 시 기본값
+            result = {
+                "summary": response_text[:200],
+                "issues": [
+                    {"badge": "참고", "color": "gold", "title": "시장 분석", "text": response_text[:100]}
+                ]
             }
-        ]
-    }
+        
+        print("✅ Claude 분석 완료")
+        return result
+        
+    except Exception as e:
+        print(f"❌ 분석 실패: {e}")
+        return {
+            "summary": "시장 분석 데이터를 수집 중입니다.",
+            "issues": [
+                {"badge": "참고", "color": "gold", "title": "시장 모니터링", "text": "실시간 데이터를 분석 중입니다."}
+            ]
+        }
