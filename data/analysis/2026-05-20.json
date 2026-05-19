@@ -1,0 +1,11 @@
+{
+  "summary": "시장 분석 중 오류가 발생했습니다. (TypeError)",
+  "issues": [
+    {
+      "badge": "참고",
+      "color": "gold",
+      "title": "시스템 알림",
+      "text": "분석 오류: \"Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set. Or for one of t"
+    }
+  ]
+}

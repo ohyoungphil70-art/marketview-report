@@ -1,0 +1,57 @@
+{
+  "date": "2026년 05월 20일",
+  "kr": {
+    "KOSPI": {
+      "name": "KOSPI",
+      "close": 0,
+      "change": 0,
+      "pct": 0
+    },
+    "KOSDAQ": {
+      "name": "KOSDAQ",
+      "close": 0,
+      "change": 0,
+      "pct": 0
+    },
+    "KRX300": {
+      "name": "KRX300",
+      "close": 0,
+      "change": 0,
+      "pct": 0
+    }
+  },
+  "us": {
+    "DOW": {
+      "name": "DOW",
+      "close": 49363.88,
+      "change": -322.24,
+      "pct": -0.65
+    },
+    "NASDAQ": {
+      "name": "NASDAQ",
+      "close": 25870.71,
+      "change": -220.02,
+      "pct": -0.84
+    },
+    "SP500": {
+      "name": "SP500",
+      "close": 7353.61,
+      "change": -49.44,
+      "pct": -0.67
+    }
+  },
+  "sectors": [],
+  "investors": {
+    "외국인": 0,
+    "기관": 0,
+    "개인": 0
+  },
+  "bond": {
+    "rate": 0,
+    "change": 0
+  },
+  "deposit": {
+    "amount": null
+  },
+  "news": []
+}
