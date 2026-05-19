@@ -8,7 +8,8 @@ from datetime import datetime
 import pytz
 from data.collector import collect_all
 from utils.claude_analyst import analyze_market
-from utils.utils.mailer import send_report_email
+from utils.mailer import send_report_email
+from utils.templates.email_html import build_email_html
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -88,7 +89,6 @@ def main():
     save_json(analysis_file, analysis)
     
     # HTML 저장
-    from utils.utils.templates.email_html import build_email_html
     html_content = build_email_html(data, analysis)
     html_file = f"data/html/{today}.html"
     save_html(html_file, html_content)
