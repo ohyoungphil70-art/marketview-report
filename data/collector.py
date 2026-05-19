@@ -19,10 +19,10 @@ def get_krx_indices():
     else:
         target = today - timedelta(days=1)
     trd_dd = target.strftime("%Y%m%d")
-    url = "http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+    url = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "http://data.krx.co.kr/",
+        "Referer": "https://data.krx.co.kr/",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     }
     index_map = {
@@ -79,10 +79,10 @@ def get_sector_data():
     else:
         target = today - timedelta(days=1)
     trd_dd = target.strftime("%Y%m%d")
-    url = "http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+    url = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "http://data.krx.co.kr/",
+        "Referer": "https://data.krx.co.kr/",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     }
     data = {"bld": "dbms/MDC/STAT/standard/MDCSTAT03901", "trdDd": trd_dd, "idxIndCd": "1", "cptlSizeGbCd": "0"}
@@ -111,10 +111,10 @@ def get_investor_data():
     else:
         target = today - timedelta(days=1)
     trd_dd = target.strftime("%Y%m%d")
-    url = "http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+    url = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Referer": "http://data.krx.co.kr/",
+        "Referer": "https://data.krx.co.kr/",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     }
     data = {"bld": "dbms/MDC/STAT/standard/MDCSTAT02203", "trdDd": trd_dd, "mktId": "STK"}
