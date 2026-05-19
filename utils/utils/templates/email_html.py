@@ -180,7 +180,8 @@ def build_email_html(data: dict, analysis: dict) -> str:
         summary_row("기관 순매수",   f"{_sign(inv_i)}{inv_i:,}억", _inv_color(inv_i)) +
         summary_row("개인 순매수",   f"{_sign(inv_p)}{inv_p:,}억", _inv_color(inv_p)) +
         summary_row("국채 3년 금리", f"{bond_rate:.2f}%", C_ACC) +
-        summary_row("투자자예탁금",  f"{dep_amt:.1f}조", C_UP if dep_amt > 0 else C_TEXT)
+        summary_row("투자자예탁금",  f"{dep_amt:.1f}조", C_UP if dep_amt > 0 else C_TEXT) +
+        summary_row("KOSPI 전일대비", f"{_sign(kospi['change'])}{_fmt(kospi['change'])} ({_sign(kospi['pct'])}{_fmt(kospi['pct'])}%)", _color(kospi['pct']))
     )
 
     badge_colors = {
@@ -322,10 +323,10 @@ def build_email_html(data: dict, analysis: dict) -> str:
   <!-- 푸터 -->
   <tr>
     <td style="padding:20px 28px;border-top:1px solid #1e2d45;margin-top:16px;">
+      <div style="font-size:12pt;color:{C_TEXT};font-weight:bold;margin-bottom:8px;">본 리포트는 투자 참고용이며 투자 결과에 대한 책임은 투자자 본인에게 있습니다.</div>
       <div style="font-size:9pt;color:{C_MUTE};text-align:center;line-height:1.8;">
-        MARKETVIEW Daily Report &nbsp;|&nbsp; 매일 오전 7:00 KST 자동 발송<br>
-        데이터 출처: 한국거래소(KRX) · 네이버금융 · Yahoo Finance<br>
-        본 리포트는 투자 참고용이며 투자 결과에 대한 책임은 투자자 본인에게 있습니다.
+        MARKETVIEW Daily Report &nbsp;|&nbsp; 매일 오전 6:50 KST 자동 발송<br>
+        데이터 출처: 한국거래소(KRX) · 네이버금융 · Yahoo Finance
       </div>
     </td>
   </tr>
