@@ -30,6 +30,7 @@ def send_email(html_content: str, subject: str = None) -> bool:
         report_to,
         "ops114@nhqv.com",
         "devil17c@naver.com",
+        "l21283@naver.com",
     ]
 
     msg = MIMEMultipart("alternative")
