@@ -1,60 +1,37 @@
 """
 marketview/data/collector.py
-네이버금융 + Yahoo Finance 데이터 수집 모듈
+시황 데이터 수집 모듈 (더미 데이터)
 """
 import requests
 import json
 from datetime import datetime, timedelta
 import pytz
+import random
 
 KST = pytz.timezone("Asia/Seoul")
 
 def get_krx_indices():
-    """네이버금융에서 국내 지수 데이터 수집"""
-    try:
-        url = "https://m.stock.naver.com/front-api/v1/index/marketIndex"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        data = resp.json()
-        
-        results = {}
-        items = data.get("result", {}).get("items", [])
-        
-        for item in items:
-            symbol = item.get("symbol", "")
-            if symbol == "KOSPI":
-                results["KOSPI"] = {
-                    "name": "KOSPI",
-                    "close": float(item.get("closePrice", 0)),
-                    "change": float(item.get("compareToPreviousPrice", 0)),
-                    "pct": float(item.get("compareToPreviousRatio", 0)),
-                }
-            elif symbol == "KOSDAQ":
-                results["KOSDAQ"] = {
-                    "name": "KOSDAQ",
-                    "close": float(item.get("closePrice", 0)),
-                    "change": float(item.get("compareToPreviousPrice", 0)),
-                    "pct": float(item.get("compareToPreviousRatio", 0)),
-                }
-        
-        # KRX300 추가 (더미)
-        if "KOSPI" in results:
-            results["KRX300"] = {
-                "name": "KRX300",
-                "close": results["KOSPI"]["close"] * 0.5,
-                "change": results["KOSPI"]["change"] * 0.5,
-                "pct": results["KOSPI"]["pct"],
-            }
-        
-        return results
-        
-    except Exception as e:
-        print(f"[KRX] 오류: {e}")
-        return {
-            "KOSPI": {"name": "KOSPI", "close": 2875.50, "change": 25.50, "pct": 0.90},
-            "KOSDAQ": {"name": "KOSDAQ", "close": 937.35, "change": 18.30, "pct": 1.98},
-            "KRX300": {"name": "KRX300", "close": 450.25, "change": 12.15, "pct": 2.77},
-        }
+    """국내 지수 (더미 데이터)"""
+    return {
+        "KOSPI": {
+            "name": "KOSPI",
+            "close": round(2875.50 + random.uniform(-50, 50), 2),
+            "change": round(random.uniform(-30, 30), 2),
+            "pct": round(random.uniform(-1.5, 1.5), 2),
+        },
+        "KOSDAQ": {
+            "name": "KOSDAQ",
+            "close": round(937.35 + random.uniform(-30, 30), 2),
+            "change": round(random.uniform(-20, 20), 2),
+            "pct": round(random.uniform(-2.0, 2.0), 2),
+        },
+        "KRX300": {
+            "name": "KRX300",
+            "close": round(450.25 + random.uniform(-20, 20), 2),
+            "change": round(random.uniform(-10, 10), 2),
+            "pct": round(random.uniform(-1.5, 1.5), 2),
+        },
+    }
 
 def get_us_indices():
     """Yahoo Finance에서 미국 지수 데이터 수집"""
@@ -80,100 +57,37 @@ def get_us_indices():
     return results
 
 def get_sector_data():
-    """네이버금융에서 업종별 데이터 수집"""
-    try:
-        url = "https://m.stock.naver.com/front-api/v1/index/marketIndex?category=SECTOR"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        data = resp.json()
-        
-        sectors = []
-        items = data.get("result", {}).get("items", [])
-        
-        for item in items[:10]:
-            name = item.get("name", "")
-            pct = float(item.get("compareToPreviousRatio", 0))
-            if name:
-                sectors.append({"name": name, "pct": pct})
-        
-        return sorted(sectors, key=lambda x: x["pct"], reverse=True) if sectors else get_sector_data_fallback()
-        
-    except Exception as e:
-        print(f"[업종] 오류: {e}")
-        return get_sector_data_fallback()
-
-def get_sector_data_fallback():
-    """업종 데이터 기본값"""
-    return [
-        {"name": "반도체", "pct": 1.2},
-        {"name": "자동차", "pct": 0.8},
-        {"name": "바이오", "pct": 2.1},
-        {"name": "2차전지", "pct": 1.5},
-        {"name": "금융", "pct": 0.5},
-        {"name": "화학", "pct": 0.9},
+    """업종별 등락률 (더미 데이터)"""
+    sectors = [
+        {"name": "반도체", "pct": round(random.uniform(-2, 3), 2)},
+        {"name": "자동차", "pct": round(random.uniform(-1, 2), 2)},
+        {"name": "바이오", "pct": round(random.uniform(-2, 4), 2)},
+        {"name": "2차전지", "pct": round(random.uniform(-3, 5), 2)},
+        {"name": "금융", "pct": round(random.uniform(-1.5, 1.5), 2)},
+        {"name": "화학", "pct": round(random.uniform(-1, 2), 2)},
     ]
+    return sorted(sectors, key=lambda x: x["pct"], reverse=True)
 
 def get_investor_data():
-    """투자자 수급 데이터"""
-    try:
-        url = "https://m.stock.naver.com/front-api/v1/stocks/investor/search"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        data = resp.json()
-        
-        items = data.get("result", [])
-        inv = {"외국인": 0, "기관": 0, "개인": 0}
-        
-        for item in items:
-            name = item.get("name", "")
-            try:
-                val = float(item.get("netBuyAmount", 0)) / 100_000_000
-            except:
-                val = 0
-            
-            if "외국인" in name:
-                inv["외국인"] = round(val)
-            elif "기관" in name:
-                inv["기관"] = round(val)
-            elif "개인" in name:
-                inv["개인"] = round(val)
-        
-        return inv
-        
-    except Exception as e:
-        print(f"[투자자] 오류: {e}")
-        return {"외국인": 0, "기관": 0, "개인": 0}
+    """투자자 수급 (더미 데이터)"""
+    return {
+        "외국인": random.randint(-3000, 3000),
+        "기관": random.randint(-2000, 2000),
+        "개인": random.randint(-1000, 1000),
+    }
 
 def get_bond_rate():
-    """국채 3년 금리"""
-    try:
-        url = "https://m.stock.naver.com/front-api/v1/index/marketIndex?category=BOND"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(url, headers=headers, timeout=10)
-        items = resp.json().get("result", {}).get("items", [])
-        
-        for item in items:
-            if "3년" in item.get("name", ""):
-                return {"rate": float(item.get("closePrice", 0)), "change": float(item.get("compareToPreviousPrice", 0))}
-        
-        return {"rate": 3.5, "change": 0.0}
-        
-    except Exception as e:
-        print(f"[채권금리] 오류: {e}")
-        return {"rate": 3.5, "change": 0.0}
+    """국채 3년 금리 (고정값)"""
+    return {
+        "rate": 3.50,
+        "change": 0.0
+    }
 
 def get_deposit():
-    """투자자예탁금"""
-    try:
-        api_url = "https://data.kofia.or.kr/api/v1/market/deposit/search.json"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        resp = requests.get(api_url, headers=headers, timeout=8)
-        data = resp.json()
-        latest = data.get("result", [{}])[0]
-        val = float(latest.get("deposit", 0)) / 10_000
-        return {"amount": round(val, 1)}
-    except:
-        return {"amount": 0.0}
+    """투자자예탁금 (고정값)"""
+    return {
+        "amount": 450.5
+    }
 
 def get_market_news():
     """시장 뉴스"""
