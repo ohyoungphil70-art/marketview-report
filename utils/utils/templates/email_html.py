@@ -115,12 +115,12 @@ def build_email_html(data: dict, analysis: dict) -> str:
   <div style="background:#1a2235;border:1px solid {col};border-radius:10px;
               padding:14px 16px;border-top:3px solid {col};">
     <div style="font-size:9pt;color:{C_MUTE};letter-spacing:1px;margin-bottom:5px;">{name}</div>
-    <div style="font-family:'Courier New',monospace;font-size:19px;font-weight:700;
+    <div style="font-family:'Courier New',monospace;font-size:22px;font-weight:700;
                 color:{C_TEXT};margin-bottom:5px;">{_fmt(close)}</div>
-    <div style="font-family:'Courier New',monospace;font-size:10pt;color:{col};">
+    <div style="font-family:'Courier New',monospace;font-size:8pt;color:{col};">
       {arr} {_fmt(abs(chg))} &nbsp;
       <span>({_sign(pct)}{_fmt(pct)}%)</span>
-      &nbsp;<span style="background:{tag_bg};color:{col};font-size:9px;
+      &nbsp;<span style="background:{tag_bg};color:{col};font-size:11px;
                          padding:2px 6px;border-radius:4px;font-weight:700;">{tag}</span>
     </div>
   </div>
@@ -151,21 +151,21 @@ def build_email_html(data: dict, analysis: dict) -> str:
         bar_w = min(abs(pct) / 6 * 100, 100)
         sector_rows += f"""
 <tr>
-  <td style="padding:5px 0;font-size:10pt;color:{C_MUTE};width:70px;">{s['name']}</td>
+  <td style="padding:5px 0;font-size:8pt;color:{C_MUTE};width:70px;">{s['name']}</td>
   <td style="padding:5px 8px;">
     <div style="background:#1e2d45;border-radius:2px;height:4px;width:100%;">
       <div style="background:{col};height:4px;border-radius:2px;width:{bar_w:.0f}%;"></div>
     </div>
   </td>
-  <td style="padding:5px 0;font-family:'Courier New',monospace;font-size:10pt;
+  <td style="padding:5px 0;font-family:'Courier New',monospace;font-size:8pt;
              color:{col};text-align:right;">{_sign(pct)}{_fmt(pct)}%</td>
 </tr>"""
 
     def summary_row(label, value, color=C_TEXT):
         return f"""
 <tr style="border-bottom:1px solid #1e2d45;">
-  <td style="padding:6px 0;font-size:10pt;color:{C_MUTE};">{label}</td>
-  <td style="padding:6px 0;font-family:'Courier New',monospace;font-size:10pt;
+  <td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">{label}</td>
+  <td style="padding:6px 0;font-family:'Courier New',monospace;font-size:8pt;
              color:{color};text-align:right;">{value}</td>
 </tr>"""
 
