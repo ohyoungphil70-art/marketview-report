@@ -27,7 +27,7 @@ def send_report_email(data: dict, analysis: dict) -> bool:
             report_to,
             "ops114@nhqv.com",
             "devil17c@naver.com",
-            "21283@naver.com",
+            
         ]
         recipients = [r for r in recipients if r]  # 빈 값 제거
         
