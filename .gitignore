@@ -1,0 +1,8 @@
+.env
+*.pyc
+__pycache__/
+data/archive/
+data/analysis/
+data/html/
+reports/
+logs/
