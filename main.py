@@ -8,8 +8,8 @@ from datetime import datetime
 import pytz
 from data.collector import collect_all
 from utils.claude_analyst import analyze_market
-from utils.utils.mailer import send_report_email
-from utils.utils.templates.email_html import build_email_html
+from utils.mailer import send_report_email
+from utils.templates.email_html import build_email_html
 
 KST = pytz.timezone("Asia/Seoul")
 
