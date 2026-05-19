@@ -31,8 +31,6 @@ BUFFETT_QUOTES = [
      "It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price."),
     ("주식시장은 인내심 없는 사람의 돈을 인내심 있는 사람에게 이전하는 장치다.",
      "The stock market is a device for transferring money from the impatient to the patient."),
-    ("오늘 누군가 나무 그늘에 앉아 있는 것은 오래전 누군가가 나무를 심었기 때문이다.",
-     "Someone is sitting in the shade today because someone planted a tree a long time ago."),
 ]
 
 def _color(pct):
@@ -75,7 +73,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
         arr = _arrow(pct)
         tag = "강세" if pct >= 0 else "약세"
         tag_bg = "rgba(229,62,62,.18)" if pct >= 0 else "rgba(49,130,206,.18)"
-        return f'<td style="width:33%;padding:0 6px;"><div style="background:#1a2235;border:1px solid {col};border-radius:10px;padding:14px 16px;border-top:3px solid {col};"><div style="font-size:9pt;color:{C_MUTE};letter-spacing:1px;margin-bottom:5px;">{name}</div><div style="font-family:\'Courier New\',monospace;font-size:22px;font-weight:700;color:{C_TEXT};margin-bottom:5px;">{_fmt(close)}</div><div style="font-family:\'Courier New\',monospace;font-size:12pt;color:{col};">{arr} {_fmt(abs(chg))} <span>({_sign(pct)}{_fmt(pct)}%)</span> <span style="background:{tag_bg};color:{col};font-size:13px;padding:2px 6px;border-radius:4px;font-weight:700;">{tag}</span></div></div></td>'
+        return f'<td style="width:33%;padding:0 6px;"><div style="background:#1a2235;border:1px solid {col};border-radius:10px;padding:16px;border-top:3px solid {col};height:140px;display:flex;flex-direction:column;justify-content:space-between;"><div style="font-size:9pt;color:{C_MUTE};letter-spacing:1px;font-weight:700;">{name}</div><div style="font-family:\'Courier New\',monospace;font-size:26px;font-weight:700;color:{C_TEXT};margin:8px 0;">{_fmt(close)}</div><div style="font-family:\'Courier New\',monospace;font-size:14pt;color:{col};font-weight:700;">{arr} {_fmt(abs(chg))}</div><div style="font-family:\'Courier New\',monospace;font-size:14pt;color:{col};font-weight:700;">({_sign(pct)}{_fmt(pct)}%)</div><div style="text-align:center;"><span style="background:{tag_bg};color:{col};font-size:12px;padding:4px 10px;border-radius:4px;font-weight:700;display:inline-block;">{tag}</span></div></div></td>'
 
     kospi = kr.get("KOSPI", {"close": 0, "change": 0, "pct": 0})
     kosdaq = kr.get("KOSDAQ", {"close": 0, "change": 0, "pct": 0})
@@ -100,7 +98,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
         pct = s["pct"]
         col = _color(pct)
         bar_w = min(abs(pct) / 6 * 100, 100)
-        sector_rows += f'<tr><td style="padding:5px 0;font-size:8pt;color:{C_MUTE};width:70px;">{s["name"]}</td><td style="padding:5px 8px;"><div style="background:#1e2d45;border-radius:2px;height:4px;width:100%;"><div style="background:{col};height:4px;border-radius:2px;width:{bar_w:.0f}%;"></div></div></td><td style="padding:5px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{col};text-align:right;">{_sign(pct)}{_fmt(pct)}%</td></tr>'
+        sector_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};width:70px;font-weight:700;">{s["name"]}</td><td style="padding:8px 8px;"><div style="background:#1e2d45;border-radius:2px;height:6px;width:100%;"><div style="background:{col};height:6px;border-radius:2px;width:{bar_w:.0f}%;"></div></div></td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{col};text-align:right;font-weight:700;">{_sign(pct)}{_fmt(pct)}%</td></tr>'
 
     inv_f = inv.get("외국인", 0)
     inv_i = inv.get("기관", 0)
@@ -108,23 +106,23 @@ def build_email_html(data: dict, analysis: dict) -> str:
     bond_rate = bond.get("rate", 0)
     dep_amt = dep.get("amount", 0)
 
-    market_rows = f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">외국인 순매수</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{_inv_color(inv_f)};text-align:right;">{_sign(inv_f)}{inv_f:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">기관 순매수</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{_inv_color(inv_i)};text-align:right;">{_sign(inv_i)}{inv_i:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">개인 순매수</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{_inv_color(inv_p)};text-align:right;">{_sign(inv_p)}{inv_p:,}억</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">국채 3년 금리</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{C_ACC};text-align:right;">{bond_rate:.2f}%</td></tr>'
-    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">투자자예탁금</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{C_UP if dep_amt > 0 else C_TEXT};text-align:right;">{dep_amt:.1f}조</td></tr>'
-    market_rows += f'<tr><td style="padding:6px 0;font-size:8pt;color:{C_MUTE};">KOSPI 전일대비</td><td style="padding:6px 0;font-family:\'Courier New\',monospace;font-size:12pt;color:{_color(kospi["pct"])};text-align:right;">{_sign(kospi["change"])}{_fmt(kospi["change"])} ({_sign(kospi["pct"])}{_fmt(kospi["pct"])}%)</td></tr>'
+    market_rows = f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">외국인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_f)};text-align:right;font-weight:700;">{_sign(inv_f)}{inv_f:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">기관 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_i)};text-align:right;font-weight:700;">{_sign(inv_i)}{inv_i:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">개인 순매수</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_inv_color(inv_p)};text-align:right;font-weight:700;">{_sign(inv_p)}{inv_p:,}억</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">국채 3년 금리</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{C_ACC};text-align:right;font-weight:700;">{bond_rate:.2f}%</td></tr>'
+    market_rows += f'<tr style="border-bottom:1px solid #1e2d45;"><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">투자자예탁금</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{C_UP if dep_amt > 0 else C_TEXT};text-align:right;font-weight:700;">{dep_amt:.1f}조</td></tr>'
+    market_rows += f'<tr><td style="padding:8px 0;font-size:10pt;color:{C_MUTE};font-weight:700;">KOSPI 전일대비</td><td style="padding:8px 0;font-family:\'Courier New\',monospace;font-size:13pt;color:{_color(kospi["pct"])};text-align:right;font-weight:700;">{_sign(kospi["change"])}{_fmt(kospi["change"])} ({_sign(kospi["pct"])}{_fmt(kospi["pct"])}%)</td></tr>'
 
     issue_blocks = ""
     for iss in issues:
         badge_colors = {"red": (C_UP, "rgba(229,62,62,.18)"), "blue": (C_DN, "rgba(49,130,206,.18)"), "gold": (C_ACC, "rgba(245,158,11,.18)")}
         col, bg = badge_colors.get(iss.get("color", "gold"), (C_ACC, "rgba(245,158,11,.18)"))
         badge_emoji = {"충격": "🔴", "주의": "🔴", "변수": "🔵", "주목": "🟡", "참고": "🟡"}.get(iss.get("badge", "참고"), "🟡")
-        issue_blocks += f'<div style="background:rgba(255,255,255,.03);border-left:3px solid {col};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;"><span style="background:{bg};color:{col};font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:8px;">{badge_emoji} {iss.get("badge", "참고")}</span><strong style="color:{C_TEXT};font-size:10pt;">{iss.get("title", "")}</strong><div style="font-size:10pt;color:{C_MUTE};margin-top:5px;line-height:1.7;">{iss.get("text", "")}</div></div>'
+        issue_blocks += f'<div style="background:rgba(255,255,255,.03);border-left:3px solid {col};border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:10px;"><span style="background:{bg};color:{col};font-size:11px;font-weight:700;padding:4px 8px;border-radius:4px;margin-right:8px;display:inline-block;">{badge_emoji} {iss.get("badge", "참고")}</span><strong style="color:{C_TEXT};font-size:11pt;">{iss.get("title", "")}</strong><div style="font-size:10pt;color:{C_MUTE};margin-top:5px;line-height:1.7;">{iss.get("text", "")}</div></div>'
 
     news_links = ""
     for n in news[:4]:
-        news_links += f'<div style="padding:5px 0;border-bottom:1px solid #1e2d45;font-size:10pt;"><a href="{n.get("link", "#")}" style="color:{C_DN};text-decoration:none;">📰 {n.get("title", "")}</a></div>'
+        news_links += f'<div style="padding:8px 0;border-bottom:1px solid #1e2d45;font-size:11pt;"><a href="{n.get("link", "#")}" style="color:{C_DN};text-decoration:none;">📰 {n.get("title", "")}</a></div>'
 
     html = f'''<!DOCTYPE html>
 <html lang="ko">
@@ -137,9 +135,9 @@ def build_email_html(data: dict, analysis: dict) -> str:
 {greeting_html}
 <tr><td style="padding:20px 28px 0;"><div style="font-size:12pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">🇰🇷 국내 주요 지수</div><table width="100%" cellpadding="0" cellspacing="0"><tr>{kr_cards}</tr></table></td></tr>
 <tr><td style="padding:16px 28px 0;"><div style="font-size:12pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">🇺🇸 미국 3대 지수</div><table width="100%" cellpadding="0" cellspacing="0"><tr>{us_cards}</tr></table></td></tr>
-<tr><td style="padding:16px 28px 0;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" style="padding-right:10px;vertical-align:top;"><div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:14px;"><div style="font-size:10pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">📊 업종별 등락률</div><table width="100%" cellpadding="0" cellspacing="0">{sector_rows}</table></div></td><td width="50%" style="padding-left:10px;vertical-align:top;"><div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:14px;"><div style="font-size:10pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">📈 시장 요약</div><table width="100%" cellpadding="0" cellspacing="0">{market_rows}</table></div></td></tr></table></td></tr>
-<tr><td style="padding:16px 28px 0;"><div style="background:#1a2235;border:1px solid {C_ACC};border-radius:10px;padding:16px 20px;"><div style="font-size:10px;color:{C_ACC};font-weight:700;letter-spacing:2px;margin-bottom:8px;">💬 TODAY'S COMMENT</div><div style="font-size:10pt;color:{C_TEXT};line-height:1.9;">{summary}</div></div></td></tr>
-<tr><td style="padding:16px 28px 0;"><div style="font-size:10pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">🔍 핵심 이슈</div>{issue_blocks}</td></tr>
+<tr><td style="padding:16px 28px 0;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" style="padding-right:10px;vertical-align:top;"><div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:14px;"><div style="font-size:11pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">📊 업종별 등락률</div><table width="100%" cellpadding="0" cellspacing="0">{sector_rows}</table></div></td><td width="50%" style="padding-left:10px;vertical-align:top;"><div style="background:#111827;border:1px solid #1e2d45;border-radius:10px;padding:14px;"><div style="font-size:11pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">📈 시장 요약</div><table width="100%" cellpadding="0" cellspacing="0">{market_rows}</table></div></td></tr></table></td></tr>
+<tr><td style="padding:16px 28px 0;"><div style="background:#1a2235;border:1px solid {C_ACC};border-radius:10px;padding:16px 20px;"><div style="font-size:10px;color:{C_ACC};font-weight:700;letter-spacing:2px;margin-bottom:8px;">💬 TODAY'S COMMENT</div><div style="font-size:11pt;color:{C_TEXT};line-height:1.9;">{summary}</div></div></td></tr>
+<tr><td style="padding:16px 28px 0;"><div style="font-size:11pt;font-weight:700;color:{C_TEXT};margin-bottom:10px;">🔍 핵심 이슈</div>{issue_blocks}</td></tr>
 <tr><td style="padding:20px 28px;border-top:1px solid #1e2d45;margin-top:16px;"><div style="font-size:12pt;color:{C_TEXT};font-weight:bold;margin-bottom:8px;">본 리포트는 투자 참고용이며 투자 결과에 대한 책임은 투자자 본인에게 있습니다.</div><div style="font-size:9pt;color:{C_MUTE};text-align:center;line-height:1.8;">MARKETVIEW Daily Report &nbsp;|&nbsp; 매일 오전 6:50 KST 자동 발송<br>데이터 출처: 한국거래소(KRX) · 네이버금융 · Yahoo Finance</div></td></tr>
 </table></td></tr></table></body></html>'''
     
