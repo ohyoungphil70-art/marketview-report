@@ -2,8 +2,8 @@ name: MarketView Daily Report (Improved)
 
 on:
   schedule:
-    - cron: '50 21 * * 1-5'  # 월-금 22:00 UTC = 오전 6:50분 KST
-  workflow_dispatch:      # 수동 실행도 가능
+    - cron: '50 21 * * 1-5'  # 월-금 21:50 UTC = 오전 6:50분 KST
+  workflow_dispatch:
 
 jobs:
   send-report:
@@ -14,7 +14,7 @@ jobs:
       - name: 📥 코드 가져오기
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 전체 히스토리 가져오기
+          fetch-depth: 0
 
       - name: 🐍 Python 3.11 설치
         uses: actions/setup-python@v5
@@ -26,6 +26,14 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: 📁 필요한 폴더 생성
+        run: |
+          mkdir -p data/archive
+          mkdir -p data/analysis
+          mkdir -p data/html
+          mkdir -p reports
+          mkdir -p logs
+
       - name: 📈 시황 리포트 생성 및 발송
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -36,70 +44,57 @@ jobs:
           python main.py
 
       - name: 🔄 인덱싱 재생성
+        if: always()
         run: |
-          python utils/index_generator.py
+          python utils/index_generator.py || echo "⚠️ 인덱싱 실패 (무시함)"
 
       - name: 📚 월간 요약 생성
+        if: always()
         run: |
           python -c "
-          from utils.index_generator import generate_summary_for_month
-          from datetime import datetime
-          import pytz
-          KST = pytz.timezone('Asia/Seoul')
-          now = datetime.now(KST)
-          generate_summary_for_month(now.year, now.month)
-          "
+from utils.index_generator import generate_summary_for_month
+from datetime import datetime
+import pytz
+KST = pytz.timezone('Asia/Seoul')
+now = datetime.now(KST)
+generate_summary_for_month(now.year, now.month)
+" || echo "⚠️ 월간 요약 생성 실패 (무시함)"
 
       - name: 🔧 Git 설정
+        if: always()
         run: |
           git config user.name "MarketView Bot"
           git config user.email "bot@marketview.local"
 
       - name: 📤 변경사항 커밋 및 푸시
+        if: always()
         run: |
-          # 변경된 파일 확인
-          if git diff --quiet; then
-            echo "변경사항 없음"
+          git add data/archive/ || true
+          git add data/analysis/ || true
+          git add data/html/ || true
+          git add reports/ || true
+          git add INDEX.md || true
+          git add logs/ || true
+          
+          if ! git diff --cached --quiet; then
+            REPORT_DATE=$(date +"%Y-%m-%d %H:%M KST")
+            git commit -m "Daily Report: $REPORT_DATE" || true
+            git push origin main || echo "⚠️ Push 실패"
           else
-            echo "변경사항 발견, 커밋 시작..."
-            
-            # 새로운 데이터 파일들 추가
-            git add data/archive/ || true
-            git add data/analysis/ || true
-            git add data/html/ || true
-            git add reports/ || true
-            git add INDEX.md || true
-            git add logs/ || true
-            
-            # 커밋 메시지 생성
-            REPORT_DATE=$(date -u +"%Y-%m-%d %H:%M KST" -d "+9 hours")
-            git commit -m "Daily Report: $REPORT_DATE
-
-- 원본 데이터: data/archive/
-- 분석 결과: data/analysis/
-- HTML 이메일: data/html/
-- 인덱스 갱신: INDEX.md
-- 월간 요약: reports/" || echo "커밋할 변경사항 없음"
-            
-            git push origin main
-            echo "✅ GitHub 푸시 완료"
+            echo "변경사항 없음"
           fi
 
       - name: ✅ 작업 완료
         if: success()
         run: |
-          echo "✅ MarketView 일일 리포트 완료"
+          echo "✅ MarketView 일일 리포트 완료!"
           echo "📊 저장된 데이터:"
           echo "  - data/archive/$(date +%Y-%m-%d).json"
           echo "  - data/analysis/$(date +%Y-%m-%d).json"
           echo "  - data/html/$(date +%Y-%m-%d).html"
-          echo "📚 인덱스:"
-          echo "  - INDEX.md (재생성)"
-          echo "  - reports/ (월간 요약)"
 
-      - name: ❌ 오류 처리
+      - name: ❌ 오류 알림
         if: failure()
         run: |
           echo "❌ 오류 발생!"
-          echo "로그를 확인하세요."
-          exit 1
+          echo "로그를 확인하세요"
