@@ -3,15 +3,15 @@
   "kr": {
     "KOSPI": {
       "name": "KOSPI",
-      "close": 7271.66,
-      "change": -244.38,
-      "pct": -3.25
+      "close": 7208.95,
+      "change": -62.71,
+      "pct": -0.86
     },
     "KOSDAQ": {
       "name": "KOSDAQ",
-      "close": 1084.36,
-      "change": -26.73,
-      "pct": -2.41
+      "close": 1056.07,
+      "change": -28.29,
+      "pct": -2.61
     },
     "KRX300": {
       "name": "KRX300",
@@ -55,24 +55,24 @@
   },
   "news": [
     {
-      "title": "30억 현금부자도 눈치싸움…대방 '아크로'냐 흑석 '써밋'이냐 [주간이집]",
-      "link": "https://www.hankyung.com/article/2026051965036"
+      "title": "힐튼 괌 리조트&스파, 새로워진 객실에서 누리는 괌의 여유…미식까지 더한 완벽한 휴양",
+      "link": "https://www.hankyung.com/article/2026052083341"
     },
     {
-      "title": "스타벅스 美 본사도 '탱크데이' 사과…\"일어나선 안 되는 일\"",
-      "link": "https://www.hankyung.com/article/2026052075357"
+      "title": "\"세 낀 집 급매물 주목…수도권 분양 1만2000가구 노려라\"",
+      "link": "https://www.hankyung.com/article/2026052082721"
     },
     {
-      "title": "삼성전자 총파업, 오늘 오전 10시 최종 담판",
-      "link": "https://www.hankyung.com/article/2026052075047"
+      "title": "안양 에버포레 자연&e편한세상, 분양가 상한제 적용된 안양 관양동 단지",
+      "link": "https://www.hankyung.com/article/2026052083141"
     },
     {
-      "title": "AI 품은 구글 검색…\"25년 만에 최대 폭 변화\" [구글 I/O 2026]",
-      "link": "https://www.hankyung.com/article/202605207466i"
+      "title": "힐스테이트 시흥더클래스, 시흥 대야동 8년 만의 새 아파트…서해선 역세권",
+      "link": "https://www.hankyung.com/article/2026052083131"
     },
     {
-      "title": "비디오·일정관리·업무 한번에…'슈퍼앱' 진화한 구글 제미나이 [구글 I/O 2026]",
-      "link": "https://www.hankyung.com/article/202605207447i"
+      "title": "평택 고덕 우미린 프레스티지, 삼성전자 평택캠퍼스 출퇴근 편리…미국 명문사학 운영 국제학교 예정",
+      "link": "https://www.hankyung.com/article/2026052083081"
     }
   ]
 }
