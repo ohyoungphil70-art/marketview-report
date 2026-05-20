@@ -185,77 +185,82 @@ def get_sector_data() -> list:
 
 # ── 투자자 수급 ────────────────────────────────────────────────────────────
 
+def _krx_investor_raw(date: str) -> list:
+    """KRX MDCSTAT02201 직접 호출 — pykrx 세션 재사용, drop() 버그 우회"""
+    from pykrx.website.comm.webio import get_session
+    krxs = get_session()
+    if krxs is None:
+        raise ValueError("KRX 세션 없음")
+    headers = krxs.get_headers()
+    resp = krxs.session.post(
+        "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
+        data={"bld": "dbms/MDC/STAT/standard/MDCSTAT02201",
+              "locale": "ko_KR",
+              "strtDd": date, "endDd": date,
+              "mktId": "STK", "etf": "", "etn": "", "elw": ""},
+        headers=headers, timeout=15,
+    )
+    j = resp.json()
+    output = j.get("output")
+    if not output:
+        raise ValueError(f"output 없음: {str(j)[:200]}")
+    print(f"[투자자 {date}] 행={len(output)}, 첫행키={list(output[0].keys())[:6]}")
+    return output
+
+
+def _parse_net_bil(output: list) -> dict:
+    """KRX output → {투자자명: 억원(int)}"""
+    import re
+    result = {}
+    for row in output:
+        name = row.get("INVST_TP_NM", "")
+        raw  = re.sub(r"[^\d-]", "", str(row.get("NETBID_TRDVAL", "0")))
+        try:
+            result[name] = int(raw) if raw and raw != "-" else 0
+        except ValueError:
+            result[name] = 0
+    return result
+
+
 def get_investor_data() -> dict:
-    """투자자 순매수 (KOSPI, 억원) + 전일대비 — pykrx"""
+    """투자자 순매수 (KOSPI, 억원) + 전일대비
+    KRX MDCSTAT02201 직접 호출 — pykrx .drop() 버그 우회"""
     _empty = {"외국인": 0, "기관": 0, "개인": 0,
               "외국인_chg": None, "기관_chg": None, "개인_chg": None}
     try:
         from pykrx import stock
         fromdate, todate = _date_range_krx(7)
 
-        # 최근 거래일 2개 확보
         idx_df = stock.get_index_ohlcv_by_date(fromdate, todate, "1001")
         if idx_df is None or idx_df.empty:
             raise ValueError("거래일 확인 실패")
-        dates = [d.strftime("%Y%m%d") for d in idx_df.index]
+        dates    = [d.strftime("%Y%m%d") for d in idx_df.index]
         today_date = dates[-1]
         prev_date  = dates[-2] if len(dates) >= 2 else None
 
-        def _net_series(date):
-            df = stock.get_market_trading_value_by_investor(date, date, "KOSPI")
-            if df is None or df.empty:
-                return None
-            print(f"[투자자 {date}] cols={list(df.columns)}, idx={list(df.index)[:6]}")
-            # 순매수거래대금 컬럼 탐색
-            net_col = next((c for c in df.columns if "순매수" in str(c) and "거래대금" in str(c)), None)
-            if net_col is None:
-                net_col = next((c for c in df.columns if "순매수" in str(c)), None)
-            # fallback: 매수 - 매도
-            if net_col is None:
-                buy  = next((c for c in df.columns if "매수" in str(c) and "순" not in str(c) and "거래대금" in str(c)), None)
-                sell = next((c for c in df.columns if "매도" in str(c) and "거래대금" in str(c)), None)
-                if buy and sell:
-                    df = df.copy()
-                    df["_net"] = df[buy] - df[sell]
-                    net_col = "_net"
-                else:
-                    print(f"[투자자 {date}] 순매수 컬럼 없음: {list(df.columns)}")
-                    return None
-            return df[net_col]
-
-        today_s = _net_series(today_date)
-        if today_s is None:
-            raise ValueError("오늘 순매수 데이터 없음")
-        prev_s = _net_series(prev_date) if prev_date else None
+        today_map = _parse_net_bil(_krx_investor_raw(today_date))
+        prev_map  = _parse_net_bil(_krx_investor_raw(prev_date)) if prev_date else {}
 
         result = {}
-        def _safe_bil(series, row_name):
-            """Series에서 억원 단위 정수 반환, NaN·오류 시 0"""
-            import math
-            try:
-                raw = float(series[row_name])
-                return int(raw / 1e8) if math.isfinite(raw) else 0
-            except Exception:
-                return 0
-
         for label, candidates in [("외국인", ["외국인합계", "외국인"]),
                                     ("기관",   ["기관합계",   "기관"]),
                                     ("개인",   ["개인"])]:
-            today_val, prev_val = 0, 0
-            for row_name in candidates:
-                if row_name in today_s.index:
-                    today_val = _safe_bil(today_s, row_name)
-                    print(f"  {label}({row_name}) raw={float(today_s[row_name]):,.0f} => {today_val:+,}억")
-                    break
-            if prev_s is not None:
-                for row_name in candidates:
-                    if row_name in prev_s.index:
-                        prev_val = _safe_bil(prev_s, row_name)
-                        break
-            chg = today_val - prev_val if prev_s is not None else None
-            result[label] = today_val
+            today_won, prev_won = 0, 0
+            for name in candidates:
+                if name in today_map:
+                    today_won = today_map[name]; break
+            if prev_map:
+                for name in candidates:
+                    if name in prev_map:
+                        prev_won = prev_map[name]; break
+
+            today_bil = int(today_won / 1e8)
+            prev_bil  = int(prev_won  / 1e8)
+            chg       = today_bil - prev_bil if prev_map else None
+            result[label] = today_bil
             result[f"{label}_chg"] = chg
-            print(f"✅ {label}: {today_val:+,}억" + (f" (전일대비 {chg:+,}억)" if chg is not None else ""))
+            print(f"✅ {label}: {today_bil:+,}억" +
+                  (f" (전일대비 {chg:+,}억)" if chg is not None else ""))
 
         return result
     except Exception as e:
