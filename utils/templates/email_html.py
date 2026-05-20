@@ -107,7 +107,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
     kr_cards = (
         _index_card("KOSPI",  _kr("KOSPI")["close"],  _kr("KOSPI")["change"],  _kr("KOSPI")["pct"])
         + _index_card("KOSDAQ", _kr("KOSDAQ")["close"], _kr("KOSDAQ")["change"], _kr("KOSDAQ")["pct"])
-        + _index_card("SOX",    _kr("SOX")["close"],    _kr("SOX")["change"],    _kr("SOX")["pct"])
+        + _index_card("필라델피아 반도체", _kr("SOX")["close"], _kr("SOX")["change"], _kr("SOX")["pct"])
     )
 
     # ── 미국 지수 카드 ──
@@ -128,13 +128,13 @@ def build_email_html(data: dict, analysis: dict) -> str:
         bar_w = min(abs(pct) / 5 * 100, 100)
         sector_rows += (
             f'<tr>'
-            f'<td style="padding:10px 0;font-size:13px;color:{C_MUTE};'
+            f'<td style="padding:5px 0;font-size:13px;color:{C_MUTE};'
             f'font-weight:600;width:80px;white-space:nowrap;">{s["name"]}</td>'
-            f'<td style="padding:10px 10px;">'
+            f'<td style="padding:5px 10px;">'
             f'<div style="background:rgba(30,45,69,.6);border-radius:4px;height:10px;">'
             f'<div style="background:{col};height:10px;border-radius:4px;'
             f'width:{bar_w:.0f}%;"></div></div></td>'
-            f'<td style="padding:10px 0;font-family:\'Courier New\',monospace;'
+            f'<td style="padding:5px 0;font-family:\'Courier New\',monospace;'
             f'font-size:14px;color:{col};text-align:right;font-weight:700;'
             f'width:65px;">{_sign(pct)}{_fmt(pct)}%</td>'
             f'</tr>'
@@ -155,9 +155,9 @@ def build_email_html(data: dict, analysis: dict) -> str:
         border = "" if last else "border-bottom:1px solid rgba(255,255,255,.08);"
         return (
             f'<tr style="{border}">'
-            f'<td style="padding:8px 0;font-size:13px;color:{C_MUTE};font-weight:600;">'
+            f'<td style="padding:4px 0;font-size:13px;color:{C_MUTE};font-weight:600;">'
             f'{label}</td>'
-            f'<td style="padding:8px 0;font-family:\'Courier New\',monospace;'
+            f'<td style="padding:4px 0;font-family:\'Courier New\',monospace;'
             f'font-size:13px;text-align:right;font-weight:700;">{value_html}</td>'
             f'</tr>'
         )
