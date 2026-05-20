@@ -3,7 +3,7 @@ marketview/data/collector.py
 시황 데이터 수집 모듈
 
 KOSPI/KOSDAQ  : FinanceDataReader (인증 불필요)
-KRX300        : pykrx (KRX_ID/KRX_PW 환경변수 필요)
+SOX           : Yahoo Finance (^SOX)
 업종별 등락률  : pykrx 우선 → Naver Finance 폴백
 투자자 수급    : pykrx (KRX_ID/KRX_PW 필요)
 국채 금리      : pykrx 우선 → Naver Finance 폴백
@@ -85,25 +85,36 @@ def get_krx_indices() -> dict:
             print(f"[FDR {name}] 오류: {e}")
             result[name] = {"name": name, "close": 0, "change": 0, "pct": 0}
 
-    # KRX300 — pykrx
-    try:
-        from pykrx import stock
-        fromdate, todate = _date_range_krx(14)
-        df = stock.get_index_ohlcv_by_date(fromdate, todate, "5042")
-        if df is None or df.empty or len(df) < 2:
-            raise ValueError("데이터 없음")
-        close = float(df["종가"].iloc[-1])
-        prev  = float(df["종가"].iloc[-2])
-        chg   = close - prev
-        pct   = chg / prev * 100
-        result["KRX300"] = {"name": "KRX300", "close": round(close, 2),
-                             "change": round(chg, 2), "pct": round(pct, 2)}
-        print(f"✅ KRX300: {result['KRX300']['close']}")
-    except Exception as e:
-        print(f"[KRX300] 오류: {e}")
-        result["KRX300"] = {"name": "KRX300", "close": 0, "change": 0, "pct": 0}
-
     return result
+
+
+# ── 필라델피아 반도체 지수 ─────────────────────────────────────────────────
+
+def get_sox_index() -> dict:
+    """필라델피아 반도체 지수 (^SOX) — Yahoo Finance"""
+    try:
+        url = ("https://query1.finance.yahoo.com/v8/finance/chart/%5ESOX"
+               "?interval=1d&range=5d")
+        resp = requests.get(url, headers=_HEADERS, timeout=10)
+        resp.raise_for_status()
+        j = resp.json()
+        closes = [c for c in
+                  j["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+                  if c is not None]
+        if len(closes) < 2:
+            raise ValueError("데이터 부족")
+        prev, curr = closes[-2], closes[-1]
+        if prev == 0:
+            raise ValueError("전일 종가 0")
+        chg = curr - prev
+        pct = chg / prev * 100
+        result = {"name": "SOX", "close": round(curr, 2),
+                  "change": round(chg, 2), "pct": round(pct, 2)}
+        print(f"✅ SOX: {result['close']}")
+        return result
+    except Exception as e:
+        print(f"[SOX] 오류: {e}")
+        return {"name": "SOX", "close": 0, "change": 0, "pct": 0}
 
 
 # ── 업종별 등락률 ──────────────────────────────────────────────────────────
@@ -175,37 +186,74 @@ def get_sector_data() -> list:
 # ── 투자자 수급 ────────────────────────────────────────────────────────────
 
 def get_investor_data() -> dict:
-    """투자자 순매수 (KOSPI, 억원) — pykrx get_market_trading_value_by_investor"""
+    """투자자 순매수 (KOSPI, 억원) + 전일대비 — pykrx"""
+    _empty = {"외국인": 0, "기관": 0, "개인": 0,
+              "외국인_chg": None, "기관_chg": None, "개인_chg": None}
     try:
         from pykrx import stock
-        last_date = _last_trading_date()
+        fromdate, todate = _date_range_krx(7)
 
-        df = stock.get_market_trading_value_by_investor(last_date, last_date, "KOSPI")
-        if df is None or df.empty:
-            raise ValueError("데이터 없음")
+        # 최근 거래일 2개 확보
+        idx_df = stock.get_index_ohlcv_by_date(fromdate, todate, "1001")
+        if idx_df is None or idx_df.empty:
+            raise ValueError("거래일 확인 실패")
+        dates = [d.strftime("%Y%m%d") for d in idx_df.index]
+        today_date = dates[-1]
+        prev_date  = dates[-2] if len(dates) >= 2 else None
 
-        net_col = (_find_col(df, ["순매수거래대금"])
-                   or _find_col(df, ["순매수", "대금"])
-                   or _find_col(df, ["순매수"]))
-        if net_col is None:
-            raise ValueError(f"순매수 컬럼 없음: {list(df.columns)}")
+        def _net_series(date):
+            df = stock.get_market_trading_value_by_investor(date, date, "KOSPI")
+            if df is None or df.empty:
+                return None
+            print(f"[투자자 {date}] cols={list(df.columns)}, idx={list(df.index)[:6]}")
+            # 순매수거래대금 컬럼 탐색
+            net_col = next((c for c in df.columns if "순매수" in str(c) and "거래대금" in str(c)), None)
+            if net_col is None:
+                net_col = next((c for c in df.columns if "순매수" in str(c)), None)
+            # fallback: 매수 - 매도
+            if net_col is None:
+                buy  = next((c for c in df.columns if "매수" in str(c) and "순" not in str(c) and "거래대금" in str(c)), None)
+                sell = next((c for c in df.columns if "매도" in str(c) and "거래대금" in str(c)), None)
+                if buy and sell:
+                    df = df.copy()
+                    df["_net"] = df[buy] - df[sell]
+                    net_col = "_net"
+                else:
+                    print(f"[투자자 {date}] 순매수 컬럼 없음: {list(df.columns)}")
+                    return None
+            return df[net_col]
+
+        today_s = _net_series(today_date)
+        if today_s is None:
+            raise ValueError("오늘 순매수 데이터 없음")
+        prev_s = _net_series(prev_date) if prev_date else None
 
         result = {}
         for label, candidates in [("외국인", ["외국인합계", "외국인"]),
                                     ("기관",   ["기관합계",   "기관"]),
                                     ("개인",   ["개인"])]:
-            val = 0
+            today_val, prev_val = 0, 0
             for row_name in candidates:
-                if row_name in df.index:
-                    val = int(df.loc[row_name, net_col] / 1e8)
+                if row_name in today_s.index:
+                    raw = today_s[row_name]
+                    today_val = int(raw / 1e8)
+                    print(f"  {label}({row_name}) raw={raw:,.0f} => {today_val:+,}억")
                     break
-            result[label] = val
-            print(f"✅ {label} 순매수: {val:+,}억")
+            if prev_s is not None:
+                for row_name in candidates:
+                    if row_name in prev_s.index:
+                        prev_val = int(prev_s[row_name] / 1e8)
+                        break
+            chg = today_val - prev_val if prev_s is not None else None
+            result[label] = today_val
+            result[f"{label}_chg"] = chg
+            print(f"✅ {label}: {today_val:+,}억" + (f" (전일대비 {chg:+,}억)" if chg is not None else ""))
 
         return result
     except Exception as e:
         print(f"[투자자] 오류: {e}")
-        return {"외국인": 0, "기관": 0, "개인": 0}
+        import traceback; traceback.print_exc()
+        return _empty
 
 
 # ── 국채 금리 ──────────────────────────────────────────────────────────────
@@ -332,6 +380,9 @@ def collect_all() -> dict:
 
     print("📊 국내 지수 수집 중...")
     kr_data = get_krx_indices()
+
+    print("📈 SOX 지수 수집 중...")
+    kr_data["SOX"] = get_sox_index()
 
     print("📈 업종 데이터 수집 중...")
     sectors = get_sector_data()

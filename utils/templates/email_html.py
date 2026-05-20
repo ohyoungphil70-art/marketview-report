@@ -107,7 +107,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
     kr_cards = (
         _index_card("KOSPI",  _kr("KOSPI")["close"],  _kr("KOSPI")["change"],  _kr("KOSPI")["pct"])
         + _index_card("KOSDAQ", _kr("KOSDAQ")["close"], _kr("KOSDAQ")["change"], _kr("KOSDAQ")["pct"])
-        + _index_card("KRX300", _kr("KRX300")["close"], _kr("KRX300")["change"], _kr("KRX300")["pct"])
+        + _index_card("SOX",    _kr("SOX")["close"],    _kr("SOX")["change"],    _kr("SOX")["pct"])
     )
 
     # ── 미국 지수 카드 ──
@@ -122,7 +122,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
 
     # ── 업종 바 차트 ──
     sector_rows = ""
-    for s in sec[:8]:
+    for s in sec[:5]:
         pct = s["pct"]
         col = _color(pct)
         bar_w = min(abs(pct) / 5 * 100, 100)
@@ -144,11 +144,12 @@ def build_email_html(data: dict, analysis: dict) -> str:
     inv_f = inv.get("외국인", 0)
     inv_i = inv.get("기관",   0)
     inv_p = inv.get("개인",   0)
+    inv_f_chg = inv.get("외국인_chg")
+    inv_i_chg = inv.get("기관_chg")
+    inv_p_chg = inv.get("개인_chg")
     bond_rate   = bond.get("rate") or 0
     bond_change = bond.get("change") or 0
     dep_amt     = dep.get("amount")
-    kospi_pct   = _kr("KOSPI")["pct"]
-    kospi_chg   = _kr("KOSPI")["change"]
 
     def _mrow(label: str, value_html: str, last: bool = False) -> str:
         border = "" if last else "border-bottom:1px solid rgba(255,255,255,.08);"
@@ -161,15 +162,23 @@ def build_email_html(data: dict, analysis: dict) -> str:
             f'</tr>'
         )
 
-    def _inv_val(v):
+    def _inv_val(v, chg=None):
         c = C_UP if v >= 0 else C_DN
-        return f'<span style="color:{c};">{_sign(v)}{v:,}억</span>'
+        html = f'<span style="color:{c};">{_sign(v)}{v:,}억</span>'
+        if chg is not None:
+            cc = C_UP if chg >= 0 else C_DN
+            html += (f' <span style="font-size:11px;color:{cc};">'
+                     f'({_sign(chg)}{chg:,}억)</span>')
+        return html
 
-    # 표시할 행만 동적으로 구성
+    # 값이 있는 행만 동적으로 구성 (0이면 숨김)
     rows_list = []
-    rows_list.append(("외국인 순매수", _inv_val(inv_f)))
-    rows_list.append(("기관 순매수",   _inv_val(inv_i)))
-    rows_list.append(("개인 순매수",   _inv_val(inv_p)))
+    if inv_f != 0:
+        rows_list.append(("외국인 순매수", _inv_val(inv_f, inv_f_chg)))
+    if inv_i != 0:
+        rows_list.append(("기관 순매수",   _inv_val(inv_i, inv_i_chg)))
+    if inv_p != 0:
+        rows_list.append(("개인 순매수",   _inv_val(inv_p, inv_p_chg)))
     if bond_rate:
         bond_color = C_UP if bond_change >= 0 else C_DN
         rows_list.append(("국채 3년 금리",
