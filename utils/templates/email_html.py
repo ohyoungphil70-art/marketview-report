@@ -53,7 +53,7 @@ def _index_card(name: str, close: float, chg: float, pct: float) -> str:
     return (
         f'<td style="width:33.33%;padding:0 8px;">'
         f'<div style="background:#1a2235;border:2px solid {col};border-radius:12px;'
-        f'padding:20px 16px;text-align:center;">'
+        f'padding:14px 12px;text-align:center;">'
         # 인덱스 이름
         f'<div style="font-size:13px;color:{C_MUTE};font-weight:700;margin-bottom:14px;'
         f'text-transform:uppercase;letter-spacing:2px;">{name}</div>'
@@ -79,7 +79,7 @@ def _index_card(name: str, close: float, chg: float, pct: float) -> str:
 def _section_title(emoji: str, title: str) -> str:
     return (
         f'<div style="font-size:15px;font-weight:900;color:{C_TEXT};'
-        f'letter-spacing:1px;margin-bottom:18px;">{emoji} {title}</div>'
+        f'letter-spacing:1px;margin-bottom:12px;">{emoji} {title}</div>'
     )
 
 
@@ -154,10 +154,10 @@ def build_email_html(data: dict, analysis: dict) -> str:
         border = "" if last else "border-bottom:1px solid rgba(255,255,255,.08);"
         return (
             f'<tr style="{border}">'
-            f'<td style="padding:13px 0;font-size:13px;color:{C_MUTE};font-weight:600;">'
+            f'<td style="padding:8px 0;font-size:13px;color:{C_MUTE};font-weight:600;">'
             f'{label}</td>'
-            f'<td style="padding:13px 0;font-family:\'Courier New\',monospace;'
-            f'font-size:14px;text-align:right;font-weight:700;">{value_html}</td>'
+            f'<td style="padding:8px 0;font-family:\'Courier New\',monospace;'
+            f'font-size:13px;text-align:right;font-weight:700;">{value_html}</td>'
             f'</tr>'
         )
 
@@ -165,22 +165,23 @@ def build_email_html(data: dict, analysis: dict) -> str:
         c = C_UP if v >= 0 else C_DN
         return f'<span style="color:{c};">{_sign(v)}{v:,}억</span>'
 
-    bond_color = C_UP if bond_change >= 0 else C_DN
-    dep_cell   = f'<span style="color:{C_ACC};">{dep_amt:.1f}조</span>' if dep_amt else f'<span style="color:{C_MUTE};">—</span>'
+    # 표시할 행만 동적으로 구성
+    rows_list = []
+    rows_list.append(("외국인 순매수", _inv_val(inv_f)))
+    rows_list.append(("기관 순매수",   _inv_val(inv_i)))
+    rows_list.append(("개인 순매수",   _inv_val(inv_p)))
+    if bond_rate:
+        bond_color = C_UP if bond_change >= 0 else C_DN
+        rows_list.append(("국채 3년 금리",
+                           f'<span style="color:{C_ACC};">{bond_rate:.2f}%</span>'
+                           f' <span style="font-size:11px;color:{bond_color};">({_sign(bond_change)}{bond_change:.3f}%p)</span>'))
+    if dep_amt:
+        rows_list.append(("투자자예탁금",
+                           f'<span style="color:{C_ACC};">{dep_amt:.1f}조</span>'))
 
-    market_rows = (
-        _mrow("외국인 순매수", _inv_val(inv_f))
-        + _mrow("기관 순매수",   _inv_val(inv_i))
-        + _mrow("개인 순매수",   _inv_val(inv_p))
-        + _mrow("국채 3년 금리",
-                f'<span style="color:{C_ACC};">{bond_rate:.2f}%</span>'
-                f' <span style="font-size:12px;color:{bond_color};">({_sign(bond_change)}{bond_change:.3f}%p)</span>')
-        + _mrow("투자자예탁금",  dep_cell)
-        + _mrow("KOSPI 전일대비",
-                f'<span style="color:{_color(kospi_pct)};">'
-                f'{_sign(kospi_chg)}{_fmt(kospi_chg)} ({_sign(kospi_pct)}{_fmt(kospi_pct)}%)'
-                f'</span>', last=True)
-    )
+    market_rows = ""
+    for i, (label, val_html) in enumerate(rows_list):
+        market_rows += _mrow(label, val_html, last=(i == len(rows_list) - 1))
 
     # ── 핵심 이슈 블록 ──
     badge_style = {
@@ -254,7 +255,7 @@ def build_email_html(data: dict, analysis: dict) -> str:
   </td></tr>
 
   <!-- QUOTE -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     <div style="background:linear-gradient(135deg,rgba(245,158,11,.15) 0%,
                 rgba(245,158,11,.05) 100%);border-left:4px solid {C_ACC};
                 border-radius:8px;padding:18px 22px;">
@@ -271,19 +272,19 @@ def build_email_html(data: dict, analysis: dict) -> str:
   </td></tr>
 
   <!-- 국내 지수 -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     {_section_title("🇰🇷", "국내 주요 지수")}
     <table width="100%"><tr class="index-card">{kr_cards}</tr></table>
   </td></tr>
 
   <!-- 미국 지수 -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     {_section_title("🇺🇸", "미국 3대 지수")}
     <table width="100%"><tr class="index-card">{us_cards}</tr></table>
   </td></tr>
 
   <!-- 업종 + 시장 요약 -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     <table width="100%"><tr>
       <td width="48%" style="padding-right:16px;vertical-align:top;">
         <div style="background:linear-gradient(135deg,#1a2235 0%,#111827 100%);
@@ -303,18 +304,18 @@ def build_email_html(data: dict, analysis: dict) -> str:
   </td></tr>
 
   <!-- 시황 분석 -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     <div style="background:linear-gradient(135deg,rgba(245,158,11,.12) 0%,
                 rgba(245,158,11,.04) 100%);border:1px solid rgba(245,158,11,.4);
                 border-radius:12px;padding:22px;">
       <div style="font-size:13px;color:{C_ACC};font-weight:700;margin-bottom:12px;
                   letter-spacing:1px;">💬 AI 시황 분석</div>
-      <div style="font-size:14px;color:{C_TEXT};line-height:1.9;">{summary}</div>
+      <div style="font-size:14px;color:{C_TEXT};line-height:1.5;">{summary}</div>
     </div>
   </td></tr>
 
   <!-- 핵심 이슈 -->
-  <tr><td style="padding:22px 36px 0;">
+  <tr><td style="padding:14px 36px 0;">
     {_section_title("🔍", "핵심 이슈")}
     {issue_blocks}
   </td></tr>
