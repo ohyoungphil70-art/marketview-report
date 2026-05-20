@@ -229,20 +229,28 @@ def get_investor_data() -> dict:
         prev_s = _net_series(prev_date) if prev_date else None
 
         result = {}
+        def _safe_bil(series, row_name):
+            """Series에서 억원 단위 정수 반환, NaN·오류 시 0"""
+            import math
+            try:
+                raw = float(series[row_name])
+                return int(raw / 1e8) if math.isfinite(raw) else 0
+            except Exception:
+                return 0
+
         for label, candidates in [("외국인", ["외국인합계", "외국인"]),
                                     ("기관",   ["기관합계",   "기관"]),
                                     ("개인",   ["개인"])]:
             today_val, prev_val = 0, 0
             for row_name in candidates:
                 if row_name in today_s.index:
-                    raw = today_s[row_name]
-                    today_val = int(raw / 1e8)
-                    print(f"  {label}({row_name}) raw={raw:,.0f} => {today_val:+,}억")
+                    today_val = _safe_bil(today_s, row_name)
+                    print(f"  {label}({row_name}) raw={float(today_s[row_name]):,.0f} => {today_val:+,}억")
                     break
             if prev_s is not None:
                 for row_name in candidates:
                     if row_name in prev_s.index:
-                        prev_val = int(prev_s[row_name] / 1e8)
+                        prev_val = _safe_bil(prev_s, row_name)
                         break
             chg = today_val - prev_val if prev_s is not None else None
             result[label] = today_val
@@ -309,7 +317,7 @@ def get_bond_rate() -> dict:
 
 
 def get_deposit() -> dict:
-    return {"amount": None}
+    return {"amount": None, "change": None}
 
 
 # ── 미국 지수 ──────────────────────────────────────────────────────────────

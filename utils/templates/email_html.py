@@ -184,9 +184,14 @@ def build_email_html(data: dict, analysis: dict) -> str:
         rows_list.append(("국채 3년 금리",
                            f'<span style="color:{C_ACC};">{bond_rate:.2f}%</span>'
                            f' <span style="font-size:11px;color:{bond_color};">({_sign(bond_change)}{bond_change:.3f}%p)</span>'))
-    if dep_amt:
-        rows_list.append(("투자자예탁금",
-                           f'<span style="color:{C_ACC};">{dep_amt:.1f}조</span>'))
+    if dep_amt is not None:
+        dep_chg = dep.get("change")
+        dep_html = f'<span style="color:{C_ACC};">{dep_amt:.1f}조</span>'
+        if dep_chg is not None:
+            dc = C_UP if dep_chg >= 0 else C_DN
+            dep_html += (f' <span style="font-size:11px;color:{dc};">'
+                         f'({_sign(dep_chg)}{dep_chg:.1f}조)</span>')
+        rows_list.append(("투자자예탁금", dep_html))
 
     market_rows = ""
     for i, (label, val_html) in enumerate(rows_list):
