@@ -185,82 +185,56 @@ def get_sector_data() -> list:
 
 # ── 투자자 수급 ────────────────────────────────────────────────────────────
 
-def _krx_investor_raw(date: str) -> list:
-    """KRX MDCSTAT02201 직접 호출 — pykrx 세션 재사용, drop() 버그 우회"""
-    from pykrx.website.comm.webio import get_session
-    krxs = get_session()
-    if krxs is None:
-        raise ValueError("KRX 세션 없음")
-    headers = krxs.get_headers()
-    resp = krxs.session.post(
-        "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
-        data={"bld": "dbms/MDC/STAT/standard/MDCSTAT02201",
-              "locale": "ko_KR",
-              "strtDd": date, "endDd": date,
-              "mktId": "STK", "etf": "", "etn": "", "elw": ""},
-        headers=headers, timeout=15,
-    )
-    j = resp.json()
-    output = j.get("output")
-    if not output:
-        raise ValueError(f"output 없음: {str(j)[:200]}")
-    print(f"[투자자 {date}] 행={len(output)}, 첫행키={list(output[0].keys())[:6]}")
-    return output
-
-
-def _parse_net_bil(output: list) -> dict:
-    """KRX output → {투자자명: 억원(int)}"""
-    import re
-    result = {}
-    for row in output:
-        name = row.get("INVST_TP_NM", "")
-        raw  = re.sub(r"[^\d-]", "", str(row.get("NETBID_TRDVAL", "0")))
-        try:
-            result[name] = int(raw) if raw and raw != "-" else 0
-        except ValueError:
-            result[name] = 0
-    return result
-
-
 def get_investor_data() -> dict:
-    """투자자 순매수 (KOSPI, 억원) + 전일대비
-    KRX MDCSTAT02201 직접 호출 — pykrx .drop() 버그 우회"""
+    """투자자 순매수 (KOSPI 유가증권, 억원) + 전일대비
+    pykrx get_market_trading_value_by_date 공개 API 사용"""
     _empty = {"외국인": 0, "기관": 0, "개인": 0,
               "외국인_chg": None, "기관_chg": None, "개인_chg": None}
     try:
         from pykrx import stock
-        fromdate, todate = _date_range_krx(7)
+        fromdate, todate = _date_range_krx(14)
 
-        idx_df = stock.get_index_ohlcv_by_date(fromdate, todate, "1001")
-        if idx_df is None or idx_df.empty:
-            raise ValueError("거래일 확인 실패")
-        dates    = [d.strftime("%Y%m%d") for d in idx_df.index]
-        today_date = dates[-1]
-        prev_date  = dates[-2] if len(dates) >= 2 else None
+        df = stock.get_market_trading_value_by_date(fromdate, todate, "KOSPI")
+        if df is None or df.empty or len(df) < 2:
+            raise ValueError("데이터 없음")
 
-        today_map = _parse_net_bil(_krx_investor_raw(today_date))
-        prev_map  = _parse_net_bil(_krx_investor_raw(prev_date)) if prev_date else {}
+        print(f"[투자자] 컬럼: {list(df.columns)}")
+        print(f"[투자자] 최근 거래일: {df.index[-1].strftime('%Y%m%d')}")
+
+        def _to_awk(v: float) -> int:
+            a = abs(v)
+            if a == 0:
+                return 0
+            if a > 1e10:    # 원(KRW) 단위 → 억원
+                return int(v / 1e8)
+            if a > 5e4:     # 백만원 단위 → 억원
+                return int(v / 100)
+            return int(v)   # 이미 억원
 
         result = {}
-        for label, candidates in [("외국인", ["외국인합계", "외국인"]),
-                                    ("기관",   ["기관합계",   "기관"]),
-                                    ("개인",   ["개인"])]:
-            today_won, prev_won = 0, 0
-            for name in candidates:
-                if name in today_map:
-                    today_won = today_map[name]; break
-            if prev_map:
-                for name in candidates:
-                    if name in prev_map:
-                        prev_won = prev_map[name]; break
+        for label, candidates in [
+            ("외국인", ["외국인합계", "외국인"]),
+            ("기관",   ["기관합계",   "기관"]),
+            ("개인",   ["개인"]),
+        ]:
+            col = next((c for c in candidates if c in df.columns), None)
+            if col is None:
+                print(f"[투자자] '{label}' 컬럼 없음 — 가용: {list(df.columns)}")
+                result[label] = 0
+                result[f"{label}_chg"] = None
+                continue
 
-            today_bil = int(today_won / 1e8)
-            prev_bil  = int(prev_won  / 1e8)
-            chg       = today_bil - prev_bil if prev_map else None
+            today_raw = float(df[col].iloc[-1])
+            prev_raw  = float(df[col].iloc[-2])
+            print(f"[투자자 raw] {label}: {today_raw:.0f}")
+
+            today_bil = _to_awk(today_raw)
+            prev_bil  = _to_awk(prev_raw)
+            chg       = today_bil - prev_bil
+
             result[label] = today_bil
             result[f"{label}_chg"] = chg
-            print(f"✅ {label}: {today_bil:+,}억" +
-                  (f" (전일대비 {chg:+,}억)" if chg is not None else ""))
+            print(f"✅ {label}: {today_bil:+,}억 (전일대비 {chg:+,}억)")
 
         return result
     except Exception as e:
@@ -321,7 +295,138 @@ def get_bond_rate() -> dict:
     return {"rate": 0, "change": 0}
 
 
+def _deposit_naver() -> dict:
+    """네이버 금융 투자자예탁금 스크래핑 (조원 단위 반환)"""
+    from bs4 import BeautifulSoup
+    import re
+    url = "https://finance.naver.com/sise/sise_deposit.naver"
+    r = requests.get(url, headers=_HEADERS, timeout=8)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.content, "html.parser")
+
+    # 예탁금 테이블에서 최근 2행 추출
+    rows = soup.select("table.type_1 tr, table.tb_type1 tr, table tr")
+    values = []
+    for row in rows:
+        cols = [td.get_text(strip=True) for td in row.select("td")]
+        if len(cols) < 2:
+            continue
+        for text in cols:
+            clean = re.sub(r"[^\d.]", "", text)
+            if not clean:
+                continue
+            try:
+                val = float(clean)
+                # 고객예탁금 합리적 범위: 30~150조원
+                if 30 < val < 150:
+                    values.append(val)
+            except ValueError:
+                pass
+        if len(values) >= 2:
+            break
+
+    if not values:
+        raise ValueError("예탁금 값 없음")
+
+    amount = values[0]
+    chg = round(values[0] - values[1], 2) if len(values) >= 2 else None
+    return {"amount": round(amount, 2), "change": chg}
+
+
+def _deposit_krx() -> dict:
+    """KRX 투자자예탁금 직접 조회 (pykrx 세션, 조원 단위 반환)"""
+    import re
+    from pykrx import stock
+    from pykrx.website.comm.webio import get_session
+
+    fromdate, todate = _date_range_krx(7)
+    idx_df = stock.get_index_ohlcv_by_date(fromdate, todate, "1001")
+    if idx_df is None or idx_df.empty:
+        raise ValueError("거래일 확인 실패")
+    dates = [d.strftime("%Y%m%d") for d in idx_df.index]
+    today_date = dates[-1]
+    prev_date  = dates[-2] if len(dates) >= 2 else None
+
+    krxs = get_session()
+    if krxs is None:
+        raise ValueError("KRX 세션 없음")
+    headers = krxs.get_headers()
+
+    def _fetch(date: str):
+        resp = krxs.session.post(
+            "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
+            data={"bld": "dbms/MDC/STAT/standard/MDCSTAT04701",
+                  "locale": "ko_KR", "trdDd": date},
+            headers=headers, timeout=15,
+        )
+        j = resp.json()
+        output = j.get("output", [])
+        print(f"[예탁금 KRX {date}] 행={len(output)}"
+              + (f", 첫행={output[0]}" if output else ""))
+        return output
+
+    def _parse_jo(rows, key=None):
+        """output 행에서 예탁금 값(조원) 추출"""
+        for row in rows:
+            for k, v in row.items():
+                if key and k != key:
+                    continue
+                raw = re.sub(r"[^\d]", "", str(v))
+                if not raw:
+                    continue
+                try:
+                    num = int(raw)
+                    # 단위 자동 판별: 예탁금은 40~100조원 범위
+                    if num > 1e12:       # 원 단위
+                        return round(num / 1e12, 2)
+                    elif num > 1e8:      # 억원 단위
+                        return round(num / 1e4, 2)
+                    elif num > 1e4:      # 백만원 단위
+                        return round(num / 1e6, 2)
+                    elif 30 < num < 150: # 이미 조원
+                        return round(num, 2)
+                except ValueError:
+                    pass
+        return None
+
+    today_rows = _fetch(today_date)
+    if not today_rows:
+        raise ValueError("output 없음")
+
+    amount = _parse_jo(today_rows)
+    if amount is None:
+        raise ValueError(f"금액 파싱 실패, 첫행: {today_rows[0]}")
+
+    chg = None
+    if prev_date:
+        try:
+            prev_rows = _fetch(prev_date)
+            prev_amount = _parse_jo(prev_rows)
+            if prev_amount is not None:
+                chg = round(amount - prev_amount, 2)
+        except Exception:
+            pass
+
+    return {"amount": amount, "change": chg}
+
+
 def get_deposit() -> dict:
+    """고객예탁금 (투자자예탁금) — 조원 단위 반환
+    네이버 금융 우선, KRX API 폴백"""
+    try:
+        result = _deposit_naver()
+        print(f"✅ 고객예탁금: {result['amount']:.2f}조 (Naver)")
+        return result
+    except Exception as e:
+        print(f"[예탁금 Naver] 오류: {e}")
+
+    try:
+        result = _deposit_krx()
+        print(f"✅ 고객예탁금: {result['amount']:.2f}조 (KRX)")
+        return result
+    except Exception as e:
+        print(f"[예탁금 KRX] 오류: {e}")
+
     return {"amount": None, "change": None}
 
 
