@@ -1,9 +1,9 @@
 name: MarketView Daily Report (Improved)
 
 on:
-  schedule:
-    - cron: '50 21 * * 0-4'  # 일~목 21:50 UTC = 월~금 06:50 KST
-  workflow_dispatch:
+  # schedule:
+  #   - cron: '50 21 * * 0-4'   # 자동 발송 중지 (2026-05-28)
+  workflow_dispatch:  # 수동 실행은 유지
 
 jobs:
   send-report:
